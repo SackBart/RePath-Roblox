@@ -1,0 +1,32 @@
+# VS Code extension packaging ignore file
+# Files and folders to exclude from the extension package
+
+# Source files
+src/**
+tsconfig.json
+eslint.config.mjs
+
+# Development files
+.vscode/**
+.vscode-test/**
+.gitignore
+.gitattributes
+
+# Build artifacts
+**/*.map
+
+# Dependencies
+node_modules/**
+
+# Documentation (keep README.md)
+.git/**
+.github/**
+
+# Test files
+**/test/**
+**/*.test.ts
+**/*.spec.ts
+
+# Misc
+*.log
+npm-debug.log*

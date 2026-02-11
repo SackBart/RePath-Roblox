@@ -4,7 +4,16 @@ import * as path from 'path';
 import * as ignoreManager from './IgnoreManager';
 import { createIgnoreFile } from './IgnoreFileCreator';
 
-export function activate(context: vscode.ExtensionContext) {
+/**
+ * Activates the RePath extension.
+ * 
+ * @param _context - VS Code extension context (unused but required by API)
+ * 
+ * @remarks
+ * This extension automatically updates require() paths in Lua/Luau files
+ * when module scripts are moved or renamed in a Roblox project.
+ */
+export function activate(_context: vscode.ExtensionContext) {
 	console.log('RePath Is Online');
 
 	let disposable = vscode.commands.registerCommand('repath.createIgnore', () => {
@@ -58,6 +67,21 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 }
 
+/**
+ * Performs refactoring of require() paths across all Lua/Luau files in the workspace.
+ * 
+ * @param oldPath - The old Roblox path (e.g., game:GetService("ServerScriptService").OldModule)
+ * @param newPath - The new Roblox path (e.g., game:GetService("ReplicatedStorage").NewModule)
+ * @param edit - VS Code workspace edit to accumulate changes
+ * @returns Number of files that were modified
+ * 
+ * @remarks
+ * This function handles two cases:
+ * 1. Variable-based requires: local SSS = game:GetService("ServerScriptService"); require(SSS.Module)
+ * 2. Direct requires: require(game:GetService("ServerScriptService").Module)
+ * 
+ * The function intelligently reuses existing service variables when possible.
+ */
 async function performRefactoring(
 	oldPath: string,
 	newPath: string,

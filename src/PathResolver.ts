@@ -1,7 +1,19 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
+import { ProjectJson, ProjectTreeNode } from './types';
 
+/**
+ * Formats a name for use in Roblox path syntax.
+ * Names with spaces are wrapped in bracket notation.
+ * 
+ * @param name - The name to format
+ * @returns Formatted name (e.g., "MyModule" or ["My Module"])
+ * 
+ * @example
+ * formatRobloxName("MyModule") // Returns: "MyModule"
+ * formatRobloxName("My Module") // Returns: '["My Module"]'
+ */
 function formatRobloxName(name: string): string {
     if (name.includes(' ')) {
         return `["${name}"]`;
@@ -9,7 +21,19 @@ function formatRobloxName(name: string): string {
     return name;
 }
 
-function findPathInTree(tree: any, targetPath: string, currentPath: string[] = []): string[] | null {
+/**
+ * Recursively searches for a target path in the Rojo project tree structure.
+ * 
+ * @param tree - The project tree node to search
+ * @param targetPath - The file system path to find
+ * @param currentPath - The current path in the tree (used for recursion)
+ * @returns Array of keys representing the path in the tree, or null if not found
+ * 
+ * @example
+ * findPathInTree(projectJson.tree, "src/server", [])
+ * // Returns: ["ServerScriptService", "server"]
+ */
+function findPathInTree(tree: ProjectTreeNode, targetPath: string, currentPath: string[] = []): string[] | null {
     if (typeof tree !== 'object' || tree === null) {
         return null;
     }
@@ -24,7 +48,7 @@ function findPathInTree(tree: any, targetPath: string, currentPath: string[] = [
             continue;
         }
         if (typeof value === 'object' && value !== null) {
-            const result = findPathInTree(value, targetPath, [...currentPath, key]);
+            const result = findPathInTree(value as ProjectTreeNode, targetPath, [...currentPath, key]);
             if (result) {
                 return result;
             }
@@ -34,17 +58,36 @@ function findPathInTree(tree: any, targetPath: string, currentPath: string[] = [
     return null;
 }
 
-function getProjectJson(workspaceFolder: vscode.WorkspaceFolder): any | null {
+/**
+ * Reads and parses the Rojo project.json file from the workspace.
+ * 
+ * @param workspaceFolder - The VS Code workspace folder
+ * @returns Parsed project.json object, or null if not found or invalid
+ * 
+ * @remarks
+ * This function searches for any file ending with '.project.json' in the workspace root.
+ * It's used to map file system paths to Roblox game paths.
+ */
+function getProjectJson(workspaceFolder: vscode.WorkspaceFolder): ProjectJson | null {
     try {
         const workspaceRoot = workspaceFolder.uri.fsPath;
-        console.log(`workspaceRoot path: ${workspaceRoot}`);
+        console.log(`[getProjectJson] Workspace root path: ${workspaceRoot}`);
+
         const files = fs.readdirSync(workspaceRoot);
         const projectJsonFile = files.find(file => file.endsWith('.project.json'));
 
         if (projectJsonFile) {
             const projectJsonPath = path.join(workspaceRoot, projectJsonFile);
             console.log(`[getProjectJson] Found project.json file: ${projectJsonFile} at: ${projectJsonPath}`);
-            const projectJson = JSON.parse(fs.readFileSync(projectJsonPath, 'utf-8'));
+
+            const projectJson = JSON.parse(fs.readFileSync(projectJsonPath, 'utf-8')) as ProjectJson;
+
+            // Validate that the project.json has a tree property
+            if (!projectJson.tree) {
+                console.error('[getProjectJson] Invalid project.json: missing tree property');
+                return null;
+            }
+
             console.log(`[getProjectJson] Loaded project.json with tree structure`);
             return projectJson;
         }
@@ -52,11 +95,34 @@ function getProjectJson(workspaceFolder: vscode.WorkspaceFolder): any | null {
         console.log(`[getProjectJson] No .project.json file found in workspace root`);
         return null;
     } catch (error) {
-        console.log(`[getProjectJson] Error reading workspace directory: ${error}`);
+        console.error(`[getProjectJson] Error reading workspace directory: ${error}`);
         return null;
     }
 }
 
+/**
+ * Converts a file system path to a Roblox game path format.
+ * 
+ * @param filePath - Relative file path from workspace root (e.g., "src/ServerScriptService/MyModule.lua")
+ * @param workspaceFolder - Optional VS Code workspace folder for project.json lookup
+ * @returns Roblox path in format: game:GetService("ServiceName").Path.To.Module
+ * 
+ * @remarks
+ * This function handles:
+ * - Conversion of filesystem paths to Roblox game paths
+ * - Special handling for init files (init.lua, init.luau)
+ * - Suffix removal (.server, .client, .shared)
+ * - Names with spaces (converted to bracket notation)
+ * - Rojo project.json tree mapping
+ * 
+ * @example
+ * convertToRobloxPath("src/ServerScriptService/MyModule.lua")
+ * // Returns: game:GetService("ServerScriptService").MyModule
+ * 
+ * @example
+ * convertToRobloxPath("src/ServerScriptService/init.server.lua")
+ * // Returns: game:GetService("ServerScriptService")
+ */
 export function convertToRobloxPath(filePath: string, workspaceFolder?: vscode.WorkspaceFolder): string {
     const dir = path.dirname(filePath);
     const filename = path.basename(filePath);
