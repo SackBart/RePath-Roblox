@@ -5,6 +5,10 @@
 		"lib": [
 			"ES2024"
 		],
+		"types": [
+			"node",
+			"vscode"
+		],
 		"outDir": "out",
 		"sourceMap": true,
 		"strict": true,

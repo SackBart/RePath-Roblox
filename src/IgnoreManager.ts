@@ -1,11 +1,11 @@
 import * as vscode from 'vscode';
 import * as ignore from 'ignore';
-import * as path from 'path';
+import { TextDecoder } from 'util';
 
 const IGNORE_NAME = ".repathignore";
 
 export async function getIgnore(workspaceFolder: vscode.WorkspaceFolder | undefined): Promise<ignore.Ignore> {
-    const ig = ignore();
+    const ig = ignore.default();
 
     ig.add(['.git', 'node_modules']);
 

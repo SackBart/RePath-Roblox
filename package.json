@@ -15,7 +15,16 @@
 	"categories": [
 		"Extension Packs"
 	],
-	"keywords": ["Roblox", "RePath", "Refactoring", "Utility", "Util", "ModuleScript", "Script", "Moving"],
+	"keywords": [
+		"Roblox",
+		"RePath",
+		"Refactoring",
+		"Utility",
+		"Util",
+		"ModuleScript",
+		"Script",
+		"Moving"
+	],
 	"pricing": "Free",
 	"activationEvents": [
 		"workspaceContains:**/*.lua",
@@ -49,7 +58,7 @@
 	"devDependencies": {
 		"@eslint/js": "^9.13.0",
 		"@stylistic/eslint-plugin": "^2.9.0",
-		"@types/node": "^22",
+		"@types/node": "^22.19.11",
 		"@types/vscode": "^1.100.0",
 		"eslint": "^9.13.0",
 		"typescript": "^5.8.2",
